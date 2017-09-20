@@ -1,0 +1,140 @@
+\documentclass{article}
+  
+  \usepackage[margin=1in]{geometry}
+  \usepackage{amsthm}
+  \usepackage{mathtools}
+  \pagenumbering{gobble}
+  
+  \begin{document}
+  
+  \begin{flushright}
+  \textbf{Dan Shawlson} \\
+  CSE 5441, T/Th 2:20 P.M.
+  \end{flushright}
+  
+  \begin{Large}
+  \centerline{Homework 1}
+  \end{Large}
+  
+  \begin{enumerate}
+    \item
+      \begin{enumerate}
+        \item
+        C1:\\
+        \begin{align*}
+        C&: 64 & B&: 4 & E&: 1 & S&: 16 \\
+        m&: 16 & b&: 2 & t&: 10 & s&: 4
+        \end{align*}
+        C2:\\
+        \begin{align*}
+        C&: 64 & B&: 16 & E&: 1 & S&: 4\\
+        m&: 16 & b&: 4 & t&: 10 & s&: 2
+        \end{align*}
+        \item
+        \begin{tabular}{l|c|c|c|c|c|c|c|c}
+           & BA00 & BA04 & AA08 & BA05 & AA14 & AA11 & AA13 & AA38 \\ \hline
+          C1 & miss & miss & miss & hit & miss & miss & hit & miss \\ \hline
+          C2 & miss & hit & miss & miss & miss & hit & hit & miss \\ \hline
+        \end{tabular}
+        \newline
+        \vspace*{1 cm}
+        \newline
+        \begin{tabular}{l|c|c|c|c|c|c|c|c}
+           & AA09 & AA0B & BA04 & AA2B & BA05 & BA06 & AA09 & AA11 \\ \hline
+          C1 & hit & hit & hit & miss & hit & hit & hit & hit \\ \hline
+          C2 & miss & hit & miss & miss & hit & hit & miss & hit \\ \hline
+        \end{tabular}
+        \newline
+        \vspace*{1 cm}
+        \newline
+        Final content: \\
+        C1: \\
+        \begin{align*}
+          \text{Set 0}&: \text{BA00-BA03} & \text{Set 1}&: \text{BA04-BA07} & \text{Set 2}&: \text{AA08-AA0B} & \text{Set 3}&: \text{?} \\
+          \text{Set 4}&: \text{AA10-AA13} & \text{Set 5}&: \text{AA14-AA17} & \text{Set 6}&: \text{?} & \text{Set 7}&: \text{?} \\
+          \text{Set 8}&: \text{?} & \text{Set 9}&: \text{?} & \text{Set 10}&: \text{AA28-AA2B} & \text{Set 11}&: \text{?} \\
+          \text{Set 12}&: \text{?} & \text{Set 13}&: \text{?} & \text{Set 14}&: \text{AA38-AA3B} & \text{Set 15}&: \text{?}
+        \end{align*}
+        C2: \\
+        \begin{align*}
+          \text{Set 0}&: \text{AA00-AA0F} & \text{Set 1}&: \text{AA10-AA1F} & \text{Set 2}&: \text{AA20-AA2F} & \text{Set 3}&: \text{AA30-AA3F}
+        \end{align*}
+        \item
+        \begin{tabular}{l|c|c|c|c}
+           & 0x0004 & 0xF008 & 0x0005 & 0xF009\\ \hline
+          C1 & miss & miss & hit & hit\\ \hline
+          C2 & miss & miss & miss & miss
+        \end{tabular}
+      \end{enumerate}
+    \item
+    \begin{enumerate}
+      \item $2^{34}$ bytes (0x000000000-0x3FFFFFFFF)
+      \item 4096 bytes
+      \item Implementing our cache will require
+      $8 \text{ bits}*(4096 \text{ data bytes}) + 1 \text{ valid bit}*(256 \text{ sets}) + 22 \text{ tag bits}*(256 \text{ sets})$,
+      for a total of 38656 bits.
+      \item $2^{22}$ blocks
+    \end{enumerate}
+    \item If we use the following cache parameters
+    \begin{align*}
+      C&: 8192 & B&: 32 & E&: 1 & S&: 256 \\
+      m&: 64 & b&: 5 & t&: 51 & s&: 8
+    \end{align*}
+    Then this code will have a cache hit ratio of at least 87.5\%
+    \begin{verbatim}
+    register int min = MAX_INT;
+    for (int i = 0; i < 1000000; i++) {
+      if (array[i] < min) {
+        min = array[i];
+      }
+    }
+    \end{verbatim}
+    \item
+    \begin{verbatim}
+    // Given an x by y matrix
+
+    // Good locality of reference
+    int sum = 0;
+    for (int i = 0; i < x; i++) {
+      for (int j = 0; j < y; j++) {
+        sum += matrix[i][j];
+      }
+    }
+    int average = sum / (x * y);
+
+    // Bad locality of reference
+    int sum = 0;
+    for (int j = 0; j < y; j++) {
+      for (int i = 0; i < x; i++) {
+        sum += matrix[i][j];
+      }
+    }
+    int average = sum / (x * y);
+    \end{verbatim}
+    Because C compilers store 2-D arrays as row-major, elements in the same row
+    of a matrix are stored contigously in memory. Hence, whenever we try to access
+    a member of a row and have a cache miss, we bring into cache other elements from the row after the
+    initial member we requested. So in the ``Good locality of reference'' example above,
+    by reading all the elements in a row before moving to the next row, we will have mostly cache hits.
+    However, in the example of bad locality of reference, we read all elements in a column before moving
+    to the next column. Unless our cache lines are longer than the rows of the matrix, we will likely
+    have a cache miss every access.
+
+    In Fortran we would see the opposite effect, since it stores 2-D arrays as column-major.
+
+    \item
+      \begin{itemize}
+        \item[--]
+          Set 0: valueA[2046-2047], followed by 8 unknown bytes \\
+          Set 1: valueA[1026-1029] \\
+          Set 2: valueA[1030-1033] \\
+          Set 3: valueA[1034-1037] \\
+          \ldots \\
+          Set 255: valueA[2042-2045]
+        \item[--]
+          (1 memory access per cache load)(256 + 256 + 1 sets loaded) = 513 memory accesses
+      \end{itemize}
+
+  \end{enumerate}
+  
+  \end{document}

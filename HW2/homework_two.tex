@@ -1,0 +1,83 @@
+\documentclass{article}
+  
+  \usepackage[margin=1in]{geometry}
+  \usepackage{amsthm}
+  \usepackage{mathtools}
+  \pagenumbering{gobble}
+  
+  \begin{document}
+  
+  \begin{flushright}
+  \textbf{Dan Shawlson} \\
+  CSE 5441, T/Th 2:20 P.M.
+  \end{flushright}
+  
+  \begin{Large}
+  \centerline{Homework 2}
+  \end{Large}
+  
+  \begin{enumerate}
+    \item
+    \begin{enumerate}
+      \item
+      \begin{align*}
+      b&=8 & s&=8 & t&=16 & m&=32 \\
+      B&=256 & S&=256 & E&=4 & C&=262,144
+      \end{align*}
+      \item
+      Hit rate $x$ = hit rate $y$ = hit rate $a$ = hit rate $b$ = ${}^{31}/_{32}$
+      \item
+      ${}^{31}/_{32}$
+      \item
+      Set 0: \{x[0-31], y[0-31], ?, ?\} \\
+      Set 1 - 127: ? \\
+      Set 128: \{a[0-31], b[0-31], ?, ?\}
+      \item
+      Set 0: \{x[0-31], y[0-31], ?, ?\} \\
+      Set 1: \{x[32-63], y[32-63], ?, ?\} \\
+      Set 2: \{x[64-95], y[64-95], ?, ?\} \\
+      \ldots \\
+      Set 7: \{x[224-255], y[224-255], ?, ?\} \\
+      Set 8 - 127: ? \\
+      Set 128: \{a[0-31], b[0-31], ?, ?\} \\
+      Set 129: \{a[32-63], b[32-63], ?, ?\} \\
+      Set 130: \{a[64-95], b[64-95], ?, ?\} \\
+      \ldots \\
+      Set 143: \{a[480-511], b[480-511], ?, ?\} 
+    \end{enumerate}
+    \item Use the eviction bits as a counter to determine which line will be occupied by the next fetch. Have the counter start
+    at $000$ to signify the first line, and on each fetch increment the counter by one until it reaches $111$ for the last line.
+    After storing data in the last line, wrap back around to $000$ for the next fetch. This scheme will work best when a cache line
+    is only needed for a short time. However, it will work poorly when there is a lot of contention and some cache lines need to
+    have priority over others.
+    \item
+      Scan 1: Look at each line's tag bits to see if the address is in cache \\
+      Scan 2: Scan each line's valid bit to see if there are any lines to occupy \\
+      Scan 3: If there are no empty lines, scan each line's eviction bits to see which is the least frequently used
+    \item An LRU cache will work well when, in any given time period, a program only uses a small subsection of its data.
+    An LFU cache will work well when some pieces of data are accessed very frequently, but the majority of
+    data is accessed only a few times.
+    \item
+    \begin{enumerate}
+      \item
+      \begin{align*}
+        b&=8 & s&=0  & m&=32 & t&=24 \\
+        B&=256 & S&=1 & E&=256 & C&=65,536       
+      \end{align*}
+      \item
+      Hit rate $x$ = hit rate $y$ = ${}^{31}/_{32}$
+      \item
+      ${}^{31}/_{32}$
+      \item
+      Line 0: x[4096-4127] \\
+      Line 1: y[4096-4127] \\
+      Line 2: x[4128-4159] \\
+      Line 3: y[4128-4159] \\
+      \ldots \\
+      Line 254: x[8160-8191] \\
+      Line 255: y[8160-8191]
+    \end{enumerate}
+    \item Hierarchy A
+  \end{enumerate}
+  
+  \end{document}
