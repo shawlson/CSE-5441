@@ -104,7 +104,7 @@ int *read_neighbors(char *line, int num_neighbors) {
     int *neighbors = (int *) malloc(num_neighbors * sizeof(int));
 
     int i;
-    for (int i = 0; i < num_neighbors; ++i) {
+    for (i = 0; i < num_neighbors; ++i) {
         int neighbor;
         int offset = 2i + 2;
         sscanf(line + offset, "%d", &neighbor);
