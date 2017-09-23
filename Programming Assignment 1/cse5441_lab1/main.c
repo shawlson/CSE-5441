@@ -22,56 +22,61 @@ int main(int argc, char **argv) {
     double affect_rate = strtod(argv[1], &end);
     double epsilon = strtod(argv[2], &end);
 
+    char buff[128];
+
     int grid_boxes, grid_rows, grid_cols;
-    scanf("%d%d%d", &grid_boxes, &grid_rows, &grid_cols);
+    fgets(buff, 128, stdin);
+    sscanf(buff, "%d%d%d", &grid_boxes, &grid_rows, &grid_cols);
     box_t boxes[grid_boxes];
 
     int id;
+    fgets(buff, 128, stdin);
+    sscanf(buff, "%d", &id);
+
     int num_boxes = 0;
-    scanf("%d", &id);
     while (id != -1) {
         
         ++num_boxes;
 
         int y, x, height, width;
-        scanf("%d%d%d%d", &y, &x, &height, &width);
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%d%d%d%d", &y, &x, &height, &width);
         
-        char line[128];
-        fgets(line, 128, stdin);
-        int num_top_neighbors;
-        sscanf(line, "%d", &num_top_neighbors);
-        int *top_neighbors = read_neighbors(line, num_top_neighbors);
+        int num_top, *top_nbrs;
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%d", &num_top);
+        top_nbrs = read_neighbors(buff, num_top);
 
-        memset(line, '\0', 128);
-        fgets(line, 128, stdin);
-        int num_bottom_neighbors;
-        sscanf(line, "%d", &num_bottom_neighbors);
-        int *bottom_neighbors = read_neighbors(line, num_bottom_neighbors);
+        int num_bot, *bot_nbrs;
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%d", &num_bot);
+        bot_nbrs = read_neighbors(buff, num_bot);
 
-        memset(line, '\0', 128);
-        fgets(line, 128, stdin);
-        int num_left_neighbors;
-        sscanf(line, "%d", &num_left_neighbors);
-        int *left_neighbors = read_neighbors(line, num_left_neighbors);
+        int num_left, *left_nbrs;
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%d", &num_left);
+        left_nbrs = read_neighbors(buff, num_left);
 
-        memset(line, '\0', 128);
-        fgets(line, 128, stdin);
-        int num_right_neighbors;
-        sscanf(line, "%d", &num_right_neighbors);
-        int *right_neighbors = read_neighbors(line, num_right_neighbors);
+        int num_right, *right_nbrs;
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%d", &num_right);
+        right_nbrs = read_neighbors(buff, num_right);
 
         double temp;
-        scanf("%lf", &temp);
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%lf", &temp);
 
         boxes[id] = (box_t) {
             .x = x, .y = y, .height = height, .width = width,
-            .num_top_neighbors = num_top_neighbors, .top_neighbors = top_neighbors,
-            .num_bottom_neighbors = num_bottom_neighbors, .bottom_neighbors = bottom_neighbors,
-            .num_left_neighbors = num_left_neighbors, .left_neighbors = left_neighbors,
-            .num_right_neighbors = num_right_neighbors, .right_neighbors = right_neighbors,
+            .num_top_neighbors = num_top, .top_neighbors = top_nbrs,
+            .num_bottom_neighbors = num_bot, .bottom_neighbors = bot_nbrs,
+            .num_left_neighbors = num_left, .left_neighbors = left_nbrs,
+            .num_right_neighbors = num_right, .right_neighbors = right_nbrs,
             .temp = temp, .adjacent_temp = NAN
         };
-        scanf("%d", &id);
+        
+        fgets(buff, 128, stdin);
+        sscanf(buff, "%d", &id);
     }
 
     int iterations = 0;
@@ -97,7 +102,7 @@ int main(int argc, char **argv) {
         else ++iterations;
     }
 
-    printf("Converged in %d iterations", iterations);
+    printf("Converged in %d iterations\n", iterations);
 }
 
 int *read_neighbors(char *line, int num_neighbors) {
@@ -106,7 +111,7 @@ int *read_neighbors(char *line, int num_neighbors) {
     int i;
     for (i = 0; i < num_neighbors; ++i) {
         int neighbor;
-        int offset = 2i + 2;
+        int offset = 2*i + 2;
         sscanf(line + offset, "%d", &neighbor);
         neighbors[i] = neighbor;
     }
