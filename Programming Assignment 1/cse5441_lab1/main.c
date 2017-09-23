@@ -105,14 +105,19 @@ int main(int argc, char **argv) {
     printf("Converged in %d iterations\n", iterations);
 }
 
-int *read_neighbors(char *line, int num_neighbors) {
-    int *neighbors = (int *) malloc(num_neighbors * sizeof(int));
-
+int *read_neighbors(char *buff, int num_neighbors) {
+    
+    int *neighbors;
+    if (num_neighbors == 0) neighbors = NULL;
+    else {
+        neighbors = (int *) malloc(num_neighbors * sizeof(int));
+    }
+    
     int i;
     for (int i = 0; i < num_neighbors; ++i) {
         int neighbor;
         int offset = 2*i + 2;
-        sscanf(line + offset, "%d", &neighbor);
+        sscanf(buff + offset, "%d", &neighbor);
         neighbors[i] = neighbor;
     }
 
