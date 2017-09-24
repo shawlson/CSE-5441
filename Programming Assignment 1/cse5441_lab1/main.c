@@ -4,6 +4,8 @@
 #include <string.h>
 #include "box.h"
 
+#include <time.h>
+
 typedef int bool;
 #define false 0
 #define true 1
@@ -85,6 +87,12 @@ int main(int argc, char **argv) {
     double updated_temps[num_boxes];
     bool converged = false;
     int iterations = 0;
+
+    time_t seconds_before, seconds_after;
+    seconds_before = time(NULL);
+
+    clock_t clock_timer;
+    clock_timer = clock();
     while (!converged) {
 
         int i;
@@ -106,11 +114,17 @@ int main(int argc, char **argv) {
         else ++iterations;
     }
 
-    printf("Settings:\n");
-    printf("\tAffect rate: %lf\tEpsilon: %lf\n", affect_rate, epsilon);
+    seconds_after = time(NULL);
+    clock_timer = clock() - clock_timer;
+
+    printf("Affect rate: %lf\tEpsilon: %lf\n", affect_rate, epsilon);
     printf("Converged in %d iterations\n", iterations);
     printf("Minimum DSV: %lf\n", min);
     printf("Maximum DSV: %lf\n", max);
+    printf("Convergence loop time [time()]: %ld\n",
+            seconds_after - seconds_before);
+    printf("Convergence loop time [clock()]: %lf\n",
+            ((double) clock_timer) / CLOCKS_PER_SEC);
 }
 
 int *read_neighbors(char *buff, int num_neighbors) {

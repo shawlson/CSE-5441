@@ -1,11 +1,11 @@
 output: main.o box.o
-	gcc main.o box.o -o program
+	gcc -O3 main.o box.o -o program
 
 main.o: main.c
-	gcc -c main.c
+	gcc -O3 -c main.c
 
 box.o: box.c box.h
-	gcc -c box.c
+	gcc -O3 -c box.c
 
 clean:
 	rm *.o program
