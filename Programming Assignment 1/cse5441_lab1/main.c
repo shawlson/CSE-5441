@@ -122,20 +122,20 @@ int *read_neighbors(char *buff, int num_neighbors) {
     }
     
     const char *token;
-    const char *delim = "\t";
+    const char *delims = " \t";
     /*
      * First call will consume the number of neighbors,
      * which we already know.
      */
-    token = strtok(buff, delim);
-    token = strtok(NULL, delim);
+    token = strtok(buff, delims);
+    token = strtok(NULL, delims);
 
     int i;
     for (i = 0; i < num_neighbors; ++i) {
         int neighbor;
         sscanf(token, "%d", &neighbor);
         neighbors[i] = neighbor;
-        token = strtok(NULL, delim);
+        token = strtok(NULL, delims);
     }
     
     return neighbors;
