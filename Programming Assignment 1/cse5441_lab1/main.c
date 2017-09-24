@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
         int y, x, height, width;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d%d%d%d", &y, &x, &height, &width);
-        
+
         int num_top, *top_nbrs;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &num_top);
@@ -68,53 +68,75 @@ int main(int argc, char **argv) {
 
         boxes[id] = (box_t) {
             .x = x, .y = y, .height = height, .width = width,
-            .num_top_neighbors = num_top, .top_neighbors = top_nbrs,
-            .num_bottom_neighbors = num_bot, .bottom_neighbors = bot_nbrs,
-            .num_left_neighbors = num_left, .left_neighbors = left_nbrs,
-            .num_right_neighbors = num_right, .right_neighbors = right_nbrs,
-            .temp = temp, .adjacent_temp = NAN
+            .num_top = num_top, .top_nbrs = top_nbrs,
+            .num_bot = num_bot, .bot_nbrs = bot_nbrs,
+            .num_left = num_left, .left_nbrs = left_nbrs,
+            .num_right = num_right, .right_nbrs = right_nbrs,
+            .temp = temp
         };
         
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &id);
     }
 
-    int iterations = 0;
+
+    double min;
+    double max;
+    double updated_temps[num_boxes];
     bool converged = false;
+    int iterations = 0;
     while (!converged) {
+
         int i;
+        max = -INFINITY;
+        min = INFINITY;
         for (i = 0; i < num_boxes; ++i) {
-            calc_adjacent_temp(i, boxes);
+            double adjacent_temp = calc_adjacent_temp(i, boxes);
+            double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
+            updated_temps[i] = updated_temp;
+            if (updated_temp > max) max = updated_temp;
+            if (updated_temp < min) min = updated_temp;
         }
 
-        double max = -INFINITY;
-        double min = INFINITY;
         for (i = 0; i < num_boxes; ++i) {
-            double new_temp = boxes[i].temp - (boxes[i].temp - boxes[i].adjacent_temp) * affect_rate;
-            if (new_temp > max) max = new_temp;
-            else if (new_temp < min) min = new_temp;
-            boxes[i].temp = new_temp;
-            boxes[i].adjacent_temp = NAN;
+            boxes[i].temp = updated_temps[i];
         }
 
-        double delta = max - min;
-        if (delta <= max * epsilon) converged = true;
+        if ((max - min) <= (epsilon * max)) converged = true;
         else ++iterations;
     }
 
+    printf("Settings:\n");
+    printf("\tAffect rate: %lf\tEpsilon: %lf\n", affect_rate, epsilon);
     printf("Converged in %d iterations\n", iterations);
+    printf("Minimum DSV: %lf\n", min);
+    printf("Maximum DSV: %lf\n", max);
 }
 
-int *read_neighbors(char *line, int num_neighbors) {
-    int *neighbors = (int *) malloc(num_neighbors * sizeof(int));
+int *read_neighbors(char *buff, int num_neighbors) {
+    
+    int *neighbors;
+    if (num_neighbors == 0) neighbors = NULL;
+    else {
+        neighbors = (int *) malloc(num_neighbors * sizeof(int));
+    }
+    
+    const char *token;
+    const char *delim = "\t";
+    /*
+     * First call will consume the number of neighbors,
+     * which we already know.
+     */
+    token = strtok(buff, delim);
+    token = strtok(NULL, delim);
 
     int i;
     for (i = 0; i < num_neighbors; ++i) {
         int neighbor;
-        int offset = 2*i + 2;
-        sscanf(line + offset, "%d", &neighbor);
+        sscanf(token, "%d", &neighbor);
         neighbors[i] = neighbor;
+        token = strtok(NULL, delim);
     }
-
+    
     return neighbors;
 }
