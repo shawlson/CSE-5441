@@ -1,0 +1,29 @@
+CSE 5441 homework  test files
+
+Located in this directory are test data files for use in your lab assignments:
+
+=====================================================================================
+Files for Autumn '15 lab 1:  "simplified AMR - sequential version"
+
+testgrid_1	    a simple 3x3 grid of unit-sized boxes
+		    may be useful for testing
+
+testgrid_2	    data for the variable-sized overlapping box grid described in the assignment.
+		    converges in 245 iterations with delta=.1 and epsilon=.1
+
+testgrid_50_78	    data file with 78 variable overlap boxes on a 50x50  grid
+		    converges in 1,508 iterations with delta=.1 and epsilon=.1
+
+testgrid_50_201	    data file with 201 variable overlap boxes on a 50x50  grid
+		    converges in 2,286 iterations with delta=.1 and epsilon=.1
+
+testgrid_200_1166   data file with 1,166 variable overlap boxes on a 200x200  grid
+		    converges in 14,461 iterations with delta=.1 and epsilon=.1
+
+testgrid_400_1636   data file with 1,636 variable overlap boxes on a 400x400  grid
+		    converges in 22,283 iterations with delta=.1 and epsilon=.1
+
+testgrid_400_12206  data file with 12,206 variable overlap boxes on a 400x400  grid
+		    converges in 75,269 iterations with delta=.1 and epsilon=.1
+
+=====================================================================================
