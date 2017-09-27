@@ -29,7 +29,7 @@ int main(int argc, char **argv) {
     int grid_boxes, grid_rows, grid_cols;
     fgets(buff, 128, stdin);
     sscanf(buff, "%d%d%d", &grid_boxes, &grid_rows, &grid_cols);
-    box_t boxes[grid_boxes];
+    box_t boxes[grid_boxes]; // Need grid_boxes at most
 
     int id;
     fgets(buff, 128, stdin);
@@ -40,34 +40,41 @@ int main(int argc, char **argv) {
         
         ++num_boxes;
 
+        // Top left coordinate, width, and, height
         int y, x, height, width;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d%d%d%d", &y, &x, &height, &width);
 
+        // Top neighbors
         int num_top, *top_nbrs;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &num_top);
         top_nbrs = read_neighbors(buff, num_top);
 
+        // Bottom neighbors
         int num_bot, *bot_nbrs;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &num_bot);
         bot_nbrs = read_neighbors(buff, num_bot);
 
+        // Left neighbors
         int num_left, *left_nbrs;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &num_left);
         left_nbrs = read_neighbors(buff, num_left);
 
+        // Right neighbors
         int num_right, *right_nbrs;
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &num_right);
         right_nbrs = read_neighbors(buff, num_right);
 
+        // Temp
         double temp;
         fgets(buff, 128, stdin);
         sscanf(buff, "%lf", &temp);
 
+        // Instantiate the box
         boxes[id] = (box_t) {
             .x = x, .y = y, .height = height, .width = width,
             .num_top = num_top, .top_nbrs = top_nbrs,
@@ -76,7 +83,8 @@ int main(int argc, char **argv) {
             .num_right = num_right, .right_nbrs = right_nbrs,
             .temp = temp
         };
-        
+       
+        // Get next box id 
         fgets(buff, 128, stdin);
         sscanf(buff, "%d", &id);
     }
@@ -88,16 +96,23 @@ int main(int argc, char **argv) {
     bool converged = false;
     int iterations = 0;
 
-    time_t seconds_before, seconds_after;
-    seconds_before = time(NULL);
+    /* Timing Mechanisms */
+    time_t time_before, time_after;
+    time_before = time(NULL);
 
-    clock_t clock_timer;
-    clock_timer = clock();
+    clock_t clock_before, clock_after;
+    clock_before = clock();
+
+    struct timespec gettime_before, gettime_after;
+    clock_gettime(CLOCK_REALTIME, &gettime_before);
+    /* ****************** */
     while (!converged) {
 
         int i;
         max = -INFINITY;
         min = INFINITY;
+
+        // Calculate updated DSVs
         for (i = 0; i < num_boxes; ++i) {
             double adjacent_temp = calc_adjacent_temp(i, boxes);
             double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
@@ -106,25 +121,40 @@ int main(int argc, char **argv) {
             if (updated_temp < min) min = updated_temp;
         }
 
+        // Commit updated DSVs
         for (i = 0; i < num_boxes; ++i) {
             boxes[i].temp = updated_temps[i];
         }
 
+        // Check for convergence
         if ((max - min) <= (epsilon * max)) converged = true;
         else ++iterations;
     }
 
-    seconds_after = time(NULL);
-    clock_timer = clock() - clock_timer;
+    /* Timing mechanisms */
+    time_after = time(NULL);
+    clock_after = clock();
+    clock_gettime(CLOCK_REALTIME, &gettime_after);
 
+
+    long time_diff = time_after - time_before;
+    double clock_diff = ((double) (clock_after - clock_before)) / CLOCKS_PER_SEC;
+    long  gettime_diff_sec = (gettime_after.tv_sec - gettime_before.tv_sec) * 1000;
+    double gettime_diff_nsec = ((double) (gettime_after.tv_nsec - gettime_before.tv_nsec) / 1000000);
+    double gettime_diff = gettime_diff_sec + gettime_diff_nsec;
+    /* ***************** */
+
+    // Results
     printf("Affect rate: %lf\tEpsilon: %lf\n", affect_rate, epsilon);
     printf("Converged in %d iterations\n", iterations);
     printf("Minimum DSV: %lf\n", min);
     printf("Maximum DSV: %lf\n", max);
-    printf("Convergence loop time [time()]: %ld\n",
-            seconds_after - seconds_before);
-    printf("Convergence loop time [clock()]: %lf\n",
-            ((double) clock_timer) / CLOCKS_PER_SEC);
+    printf("Convergence loop time [time()] (s): %ld\n",
+            time_diff);
+    printf("Convergence loop time [clock()] (s): %lf\n",
+            clock_diff);
+    printf("Convergence loop time [clock_gettime()] (ms): %lf\n",
+           gettime_diff);
 }
 
 int *read_neighbors(char *buff, int num_neighbors) {
@@ -154,3 +184,4 @@ int *read_neighbors(char *buff, int num_neighbors) {
     
     return neighbors;
 }
+

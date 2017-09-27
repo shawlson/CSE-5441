@@ -4,6 +4,7 @@ enum overlap_type {HORIZONTAL, VERTICAL};
 static int overlap(box_t *one, box_t *two, enum overlap_type type);
 static inline int perimeter(box_t *box);
 
+
 double
 calc_adjacent_temp(int id, box_t *boxes) {
     
@@ -11,6 +12,7 @@ calc_adjacent_temp(int id, box_t *boxes) {
     double sum = 0.0;
     int i;
 
+    // Sum temp(neighbor) * overlap(neighbor) over all neighbors
     if (!box->num_top) sum += box->temp * box->width;
     else {
         for (i = 0; i < box->num_top; ++i) {
