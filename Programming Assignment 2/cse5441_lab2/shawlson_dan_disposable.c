@@ -122,8 +122,6 @@ int main(int argc, char **argv) {
     // Convergence loop
     while (!converged) {
 
-        printf("Current iteration: %d\n", iterations);
-
         min = INFINITY;
         max = -INFINITY;
 
@@ -142,7 +140,6 @@ int main(int argc, char **argv) {
             thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
             params->start = start;
             params->end = start + (boxes_per_thread + 1);
-            printf("Creating thread that calculates from %d to %d\n", params->start, params->end);
             pthread_create(&threads[tid], NULL, calc_dsvs, (void *) params);
             start += boxes_per_thread + 1;
         }
@@ -150,7 +147,6 @@ int main(int argc, char **argv) {
             thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
             params->start = start;
             params->end = start + boxes_per_thread;
-            printf("Creating thread that calculates from %d to %d\n", params->start, params->end);
             pthread_create(&threads[tid], NULL, calc_dsvs, (void *) params);
             start += boxes_per_thread;
         }
