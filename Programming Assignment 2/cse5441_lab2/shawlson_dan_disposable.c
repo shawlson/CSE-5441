@@ -18,11 +18,11 @@ typedef int bool;
 typedef struct {
     int start;
     int end;
+    double *temps;
 } thread_param_t;
 
 double affect_rate;
 box_t *boxes;
-double *updated_temps;
 
 int main(int argc, char **argv) {
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv) {
     }
 
     double min, max;
-    updated_temps = (double *) malloc(num_boxes * sizeof(double));
+    double updated_temps[num_boxes]; 
     bool converged = false;
     int iterations = 0;
 
@@ -140,21 +140,31 @@ int main(int argc, char **argv) {
             thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
             params->start = start;
             params->end = start + (boxes_per_thread + 1);
+            params->temps = (double *) malloc((params->end - params->start) * sizeof(double));
             pthread_create(&threads[tid], NULL, calc_dsvs, (void *) params);
             start += boxes_per_thread + 1;
         }
-        for (; tid < num_threads; ++tid) {
+        for (; tid < num_threads && tid < num_boxes; ++tid) {
             thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
             params->start = start;
             params->end = start + boxes_per_thread;
+            params->temps = (double *) malloc((params->end - params->start) * sizeof(double));
             pthread_create(&threads[tid], NULL, calc_dsvs, (void *) params);
             start += boxes_per_thread;
         }
 
         // Wait for threads to exit
         int i;
-        for (i = 0; i < num_threads; ++i) {
-            pthread_join(threads[i], NULL);
+        void *retval;
+        for (i = 0; i < num_threads && i < num_boxes; ++i) {
+            pthread_join(threads[i], &retval);
+            thread_param_t *ret = (thread_param_t *) retval;
+            int j;
+            for (j = 0; j < ret->end - ret->start; ++j) {
+                updated_temps[j + ret->start] = ret->temps[j];
+            }
+            free(ret->temps);
+            free(ret);
         }
 
         // Commit DSVs
@@ -198,18 +208,17 @@ int main(int argc, char **argv) {
 void *calc_dsvs(void *arg) {
 
     thread_param_t *params = (thread_param_t *) arg;
+    int num_elements = params->end - params->start;
 
      // Calculate updated DSVs
      int i;
-     for (i = params->start; i < params->end; ++i) {
-        double adjacent_temp = calc_adjacent_temp(i, boxes);
-        double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
-        updated_temps[i] = updated_temp;
+     for (i = 0; i < num_elements; ++i) {
+        double adjacent_temp = calc_adjacent_temp(i + params->start, boxes);
+        double updated_temp = boxes[i + params->start].temp - (boxes[i + params->start].temp - adjacent_temp) * affect_rate;
+        params->temps[i] = updated_temp;
     }
 
-    free(params);
-
-    return NULL;
+    return arg;
 }
 
 int *read_neighbors(char *buff, int num_neighbors) {
