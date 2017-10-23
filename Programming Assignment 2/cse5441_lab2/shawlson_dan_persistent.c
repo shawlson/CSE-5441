@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     // some threads will have to do more work than others.
     // The (first num_boxes mod num_threads) will calculate
     // one more box than the rest of the threads
-    for (tid = 0; tid < remaining && tid < num_boxes; ++tid) {
+    for (tid = 0; tid < remaining; ++tid) {
         thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
         params->tid = tid;
         params->start = start;
