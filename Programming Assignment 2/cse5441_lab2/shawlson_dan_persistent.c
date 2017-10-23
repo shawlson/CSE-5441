@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
         min = INFINITY;
         start = 0;
         int i;
-        for (tid = 0; tid < remaining && tid < num_boxes; ++tid) {
+        for (tid = 0; tid < remaining; ++tid) {
             for (i = 0; i < boxes_per_thread + 1; ++i) {
                 double updated_temp = thread_temps[tid][i];
                 if (updated_temp < min) min = updated_temp;
