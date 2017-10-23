@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <pthread.h>
 #include "box.h"
 
 #include <time.h>
@@ -10,26 +11,42 @@ typedef int bool;
 #define false 0
 #define true 1
 
+typedef struct {
+    int tid;
+    int start;
+    int end;
+} thread_param_t;
 
+void *calc_dsvs(void *);
 int *read_neighbors(char *, int);
+
+double affect_rate;
+box_t *boxes;
+double **thread_temps;
+bool converged;
+pthread_barrier_t threads_finished;
+pthread_barrier_t main_finished;
 
 int main(int argc, char **argv) {
 
-    if (argc != 3) {
-        fprintf(stderr, "Parameters: AFFECT RATE, EPSILON\n");
+    if (argc != 4) {
+        fprintf(stderr, "Parameters: AFFECT RATE, EPSILON, NUM_THREADS\n");
         return(-1);
     }
 
+    // Read user-specified parameters
     char *end;
-    double affect_rate = strtod(argv[1], &end);
+    affect_rate = strtod(argv[1], &end);
     double epsilon = strtod(argv[2], &end);
+    int num_threads = atoi(argv[3]);
 
+    // Read environment info
     char buff[128];
 
     int grid_boxes, grid_rows, grid_cols;
     fgets(buff, 128, stdin);
     sscanf(buff, "%d%d%d", &grid_boxes, &grid_rows, &grid_cols);
-    box_t boxes[grid_boxes]; // Need grid_boxes at most
+    boxes = (box_t *) malloc(grid_boxes * sizeof(box_t)); // Need grid_boxes at most
 
     int id;
     fgets(buff, 128, stdin);
@@ -89,13 +106,6 @@ int main(int argc, char **argv) {
         sscanf(buff, "%d", &id);
     }
 
-
-    double min;
-    double max;
-    double updated_temps[num_boxes];
-    bool converged = false;
-    int iterations = 0;
-
     /* Timing Mechanisms */
     time_t time_before, time_after;
     time_before = time(NULL);
@@ -106,29 +116,90 @@ int main(int argc, char **argv) {
     struct timespec gettime_before, gettime_after;
     clock_gettime(CLOCK_REALTIME, &gettime_before);
     /* ****************** */
+
+    // Initialize thread barriers
+    pthread_barrier_init(&threads_finished, NULL, num_threads + 1);
+    pthread_barrier_init(&main_finished, NULL, num_threads + 1);
+
+    // Initialize threads
+    pthread_t threads[num_threads];
+    int boxes_per_thread = num_boxes / num_threads;
+    int remaining = num_boxes % num_threads;
+    thread_temps = (double **) malloc(num_threads * sizeof(double *));
+    int start = 0;
+    int tid;
+    // If num_threads doesn't evenly divide num_boxes,
+    // some threads will have to do more work than others.
+    // The (first num_boxes mod num_threads) will calculate
+    // one more box than the rest of the threads
+    for (tid = 0; tid < remaining && tid < num_boxes; ++tid) {
+        thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
+        params->tid = tid;
+        params->start = start;
+        params->end = start + (boxes_per_thread + 1);
+        pthread_create(&threads[tid], NULL, calc_dsvs, (void *) params);
+        start += boxes_per_thread + 1;
+    }
+    for (; tid < num_threads && tid < num_boxes; ++tid) {
+        thread_param_t *params = (thread_param_t *) malloc(sizeof(thread_param_t));
+        params->tid = tid;
+        params->start = start;
+        params->end = start + boxes_per_thread;
+        pthread_create(&threads[tid], NULL, calc_dsvs, (void *) params);
+        start += boxes_per_thread;
+    }
+
+    // Convergence loop
+    double min;
+    double max;
+    converged = false;
+    int iterations = 0;
+
     while (!converged) {
 
-        int i;
-        max = -INFINITY;
-        min = INFINITY;
-
-        // Calculate updated DSVs
-        for (i = 0; i < num_boxes; ++i) {
-            double adjacent_temp = calc_adjacent_temp(i, boxes);
-            double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
-            updated_temps[i] = updated_temp;
-            if (updated_temp > max) max = updated_temp;
-            if (updated_temp < min) min = updated_temp;
-        }
+        // Wait for threads to finish
+        pthread_barrier_wait(&threads_finished);
 
         // Commit updated DSVs
-        for (i = 0; i < num_boxes; ++i) {
-            boxes[i].temp = updated_temps[i];
+        max = -INFINITY;
+        min = INFINITY;
+        start = 0;
+        int i;
+        for (tid = 0; tid < remaining && tid < num_boxes; ++tid) {
+            for (i = 0; i < boxes_per_thread + 1; ++i) {
+                double updated_temp = thread_temps[tid][i];
+                if (updated_temp < min) min = updated_temp;
+                if (updated_temp > max) max = updated_temp;
+                boxes[start + i].temp = updated_temp;
+            }
+            start += boxes_per_thread + 1;
+        }
+        for (; tid < num_threads && tid < num_boxes; ++tid) {
+            for (i = 0; i < boxes_per_thread; ++i) {
+                double updated_temp = thread_temps[tid][i];
+                if (updated_temp < min) min = updated_temp;
+                if (updated_temp > max) max = updated_temp;
+                boxes[start + i].temp = updated_temp;
+            }
+            start += boxes_per_thread;
         }
 
         // Check for convergence
         if ((max - min) <= (epsilon * max)) converged = true;
         else ++iterations;
+
+        // Alert threads
+        pthread_barrier_wait(&main_finished);
+    }
+
+    // Kill barriers
+    pthread_barrier_destroy(&threads_finished);
+    pthread_barrier_destroy(&main_finished);
+
+    // Let threads die
+    int i;
+    for (i = 0; i < num_threads; ++i) {
+        pthread_join(threads[i], NULL);
     }
 
     /* Timing mechanisms */
@@ -155,6 +226,35 @@ int main(int argc, char **argv) {
             clock_diff);
     printf("Convergence loop time [clock_gettime()] (ms): %lf\n",
            gettime_diff);
+}
+
+void *calc_dsvs(void *arg) {
+
+    // Read parameters and allocate memory
+    thread_param_t *params = (thread_param_t *) arg;
+    int tid = params->tid;
+    int start = params->start;
+    int end = params->end;
+    int num_elements = end - start;
+    thread_temps[tid] = (double *) malloc(num_elements * sizeof(double));
+    
+    while (!converged) {
+        // Calculate updated DSVs
+        int i;
+        for (i = 0; i < num_elements; ++i) {
+            double adjacent_temp = calc_adjacent_temp(start + i, boxes);
+            double updated_temp = boxes[start + i].temp - (boxes[start + i].temp - adjacent_temp) * affect_rate;
+            thread_temps[tid][i] = updated_temp;
+        }
+        // Wait on other threads to finish calculations 
+        pthread_barrier_wait(&threads_finished);
+
+        // Wait on main convergence loop before continuing
+        pthread_barrier_wait(&main_finished);
+    }
+
+    free(thread_temps[tid]);
+    return NULL;
 }
 
 int *read_neighbors(char *buff, int num_neighbors) {
@@ -184,4 +284,3 @@ int *read_neighbors(char *buff, int num_neighbors) {
     
     return neighbors;
 }
-
