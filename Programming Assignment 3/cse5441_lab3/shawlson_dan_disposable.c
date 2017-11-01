@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <omp.h>
 #include "box.h"
 
 #include <time.h>
@@ -15,14 +16,15 @@ int *read_neighbors(char *, int);
 
 int main(int argc, char **argv) {
 
-    if (argc != 3) {
-        fprintf(stderr, "Parameters: AFFECT RATE, EPSILON\n");
+    if (argc != 4) {
+        fprintf(stderr, "Parameters: AFFECT RATE, EPSILON, NUM_THREADS\n");
         return(-1);
     }
 
     char *end;
     double affect_rate = strtod(argv[1], &end);
     double epsilon = strtod(argv[2], &end);
+    int num_threads = atoi(argv[3]);
 
     char buff[128];
 
@@ -113,17 +115,18 @@ int main(int argc, char **argv) {
         min = INFINITY;
 
         // Calculate updated DSVs
+        #pragma omp parallel for num_threads(num_threads)
         for (i = 0; i < num_boxes; ++i) {
             double adjacent_temp = calc_adjacent_temp(i, boxes);
             double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
             updated_temps[i] = updated_temp;
-            if (updated_temp > max) max = updated_temp;
-            if (updated_temp < min) min = updated_temp;
         }
 
-        // Commit updated DSVs
+        // Commit updated DSVs and check for max/min values
         for (i = 0; i < num_boxes; ++i) {
             boxes[i].temp = updated_temps[i];
+            if (updated_temps[i] < min) min = updated_temps[i];
+            if (updated_temps[i] > max) max = updated_temps[i];
         }
 
         // Check for convergence
