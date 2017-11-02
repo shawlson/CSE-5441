@@ -115,11 +115,13 @@ int main(int argc, char **argv) {
         min = INFINITY;
 
         // Calculate updated DSVs
-        #pragma omp parallel for num_threads(num_threads)
-        for (i = 0; i < num_boxes; ++i) {
-            double adjacent_temp = calc_adjacent_temp(i, boxes);
-            double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
-            updated_temps[i] = updated_temp;
+        #pragma omp num_threads(num_threads) parallel for
+        {
+            for (i = 0; i < num_boxes; ++i) {
+                double adjacent_temp = calc_adjacent_temp(i, boxes);
+                double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
+                updated_temps[i] = updated_temp;
+            }
         }
 
         // Commit updated DSVs and check for max/min values
