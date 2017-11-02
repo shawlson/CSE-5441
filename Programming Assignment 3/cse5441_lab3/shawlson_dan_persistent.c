@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <omp.h>
 #include "box.h"
 
 #include <time.h>
@@ -15,14 +16,15 @@ int *read_neighbors(char *, int);
 
 int main(int argc, char **argv) {
 
-    if (argc != 3) {
-        fprintf(stderr, "Parameters: AFFECT RATE, EPSILON\n");
+    if (argc != 4) {
+        fprintf(stderr, "Parameters: AFFECT RATE, EPSILON, NUM_THREADS\n");
         return(-1);
     }
 
     char *end;
     double affect_rate = strtod(argv[1], &end);
     double epsilon = strtod(argv[2], &end);
+    int num_threads = atoi(argv[3]);
 
     char buff[128];
 
@@ -90,8 +92,8 @@ int main(int argc, char **argv) {
     }
 
 
-    double min;
-    double max;
+    double min = INFINITY;
+    double max = -INFINITY;
     double updated_temps[num_boxes];
     bool converged = false;
     int iterations = 0;
@@ -106,31 +108,42 @@ int main(int argc, char **argv) {
     struct timespec gettime_before, gettime_after;
     clock_gettime(CLOCK_REALTIME, &gettime_before);
     /* ****************** */
-    while (!converged) {
+    #pragma omp parallel num_threads(num_threads)
+    {
+        while (!converged) {
 
-        int i;
-        max = -INFINITY;
-        min = INFINITY;
+            // Calculate updated DSVs
+            int t_id = omp_get_thread_num();
+            int i;
+            for (i = t_id; i < num_boxes; i += omp_get_num_threads()) {
+                double adjacent_temp = calc_adjacent_temp(i, boxes);
+                double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
+                updated_temps[i] = updated_temp;
+            }
 
-        // Calculate updated DSVs
-        for (i = 0; i < num_boxes; ++i) {
-            double adjacent_temp = calc_adjacent_temp(i, boxes);
-            double updated_temp = boxes[i].temp - (boxes[i].temp - adjacent_temp) * affect_rate;
-            updated_temps[i] = updated_temp;
-            if (updated_temp > max) max = updated_temp;
-            if (updated_temp < min) min = updated_temp;
+            #pragma omp barrier
+            #pragma omp single
+            {
+                // Commit updated DSVs and check for new min/max values
+                for (i = 0; i < num_boxes; ++i) {
+                    boxes[i].temp = updated_temps[i];
+                    // I don't think a critical section is needed here,
+                    // since only one thread can execute this
+                    if (updated_temps[i] < min) min = updated_temps[i];
+                    if (updated_temps[i] > max) max = updated_temps[i];
+                }
+            
+                // Check for convergence
+                if ((max - min) <= (epsilon * max)) converged = true;
+                else {
+                    ++iterations;
+                    max = -INFINITY;
+                    min = INFINITY;
+                }
+            }
         }
-
-        // Commit updated DSVs
-        for (i = 0; i < num_boxes; ++i) {
-            boxes[i].temp = updated_temps[i];
-        }
-
-        // Check for convergence
-        if ((max - min) <= (epsilon * max)) converged = true;
-        else ++iterations;
     }
-
+    
     /* Timing mechanisms */
     time_after = time(NULL);
     clock_after = clock();
