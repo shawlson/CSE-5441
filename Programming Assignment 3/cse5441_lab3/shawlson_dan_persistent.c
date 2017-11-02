@@ -97,6 +97,8 @@ int main(int argc, char **argv) {
     double updated_temps[num_boxes];
     bool converged = false;
     int iterations = 0;
+    unsigned int min_threads = 0xFFFFFFFF;
+    unsigned int max_threads = 0x0;
 
     /* Timing Mechanisms */
     time_t time_before, time_after;
@@ -110,6 +112,13 @@ int main(int argc, char **argv) {
     /* ****************** */
     #pragma omp parallel num_threads(num_threads)
     {
+
+        // omp_get_num_threads() will be the same across all
+        // threads, so there's no need to worry about race conditions
+        int thread_count = omp_get_num_threads();
+        if (thread_count < min_threads) min_threads = thread_count;
+        if (thread_count > max_threads) max_threads = thread_count;
+        
         while (!converged) {
 
             // Calculate updated DSVs
@@ -143,7 +152,7 @@ int main(int argc, char **argv) {
             }
         }
     }
-    
+
     /* Timing mechanisms */
     time_after = time(NULL);
     clock_after = clock();
@@ -160,6 +169,8 @@ int main(int argc, char **argv) {
     // Results
     printf("Affect rate: %lf\tEpsilon: %lf\n", affect_rate, epsilon);
     printf("Converged in %d iterations\n", iterations);
+    printf("Min thread count: %d\n", min_threads);
+    printf("Max thread count: %d\n", max_threads);
     printf("Minimum DSV: %lf\n", min);
     printf("Maximum DSV: %lf\n", max);
     printf("Convergence loop time [time()] (s): %ld\n",
