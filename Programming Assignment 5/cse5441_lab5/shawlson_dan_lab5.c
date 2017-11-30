@@ -20,6 +20,11 @@ unsigned int end_row(unsigned int, unsigned int, unsigned int);
 
 int main(int argc, char *argv[]) {
 
+    if (argc != 3) {
+        fprintf(stderr, "usage: lab5.out input_image.bmp output_image.bmp\n");
+        exit(-1);
+    }
+
     // Initalize MPI environment and get size of/rank within communicator
     MPI_Init(&argc, &argv);
     int rank;
