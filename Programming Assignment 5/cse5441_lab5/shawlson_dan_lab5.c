@@ -59,9 +59,6 @@ int main(int argc, char *argv[]) {
      */
     int start = start_row(height - 2, size, rank) + 1;
     int end = end_row(height - 2, size, rank) + 1;
-    #ifndef NO_OPENMP
-    int num_threads = end - start;
-    #endif
     unsigned char *output_bmp = (unsigned char *) calloc((end - start) * width, sizeof(unsigned char));
 
     #ifdef DEBUG
@@ -81,11 +78,11 @@ int main(int argc, char *argv[]) {
         // Sobel calculations
         int row, column;
         unsigned int gradient_x, gradient_y, magnitude;
-        #ifndef NO_OPENMP
-        #pragma omp parallel num_threads(num_threads)
-        #pragma omp for collapse(2) reduction(+:black_cell_count)
-        #endif
         for (row = start; row < end; ++row) {
+            #ifndef NO_OPENMP
+            #pragma omp parallel num_threads(width - 2)
+            #pragma omp for reduction(+:black_cell_count)
+            #endif
             for (column = 1; column < width - 1; ++column) {
                 gradient_x = input_bmp[(row - 1) * width + (column + 1)] \
                              - input_bmp[(row - 1) * width + (column - 1)] \
