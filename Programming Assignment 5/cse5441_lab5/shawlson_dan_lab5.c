@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
         unsigned int gradient_x, gradient_y, magnitude;
         for (row = start; row < end; ++row) {
             #ifndef NO_OPENMP
-            #pragma omp parallel num_threads(width - 2)
+            #pragma omp parallel
             #pragma omp for reduction(+:black_cell_count)
             #endif
             for (column = 1; column < width - 1; ++column) {
